@@ -37,10 +37,18 @@ class ResponseParseTest {
   }
 
   @Test
-  fun testPlayerInfoParse() {
-    val fileContent = ResponseParseTest::class.java.getResource("player_info.xml")!!.readText()
+  fun testPlayerInfoParse1() {
+    val fileContent = ResponseParseTest::class.java.getResource("player_info1.xml")!!.readText()
     val currentPlayerInfo = fileContent.asXml().parseAsCurrentPlayerInfo()
     assertEquals(2892, currentPlayerInfo.gold)
     assertEquals(1639, currentPlayerInfo.fame)
+  }
+
+  @Test
+  fun testPlayerInfoParse2() {
+    val fileContent = ResponseParseTest::class.java.getResource("player_info2.xml")!!.readText()
+    val currentPlayerInfo = fileContent.asXml().parseAsCurrentPlayerInfo()
+    assertEquals(3604, currentPlayerInfo.gold)
+    assertEquals(1672, currentPlayerInfo.fame)
   }
 }

@@ -19,11 +19,15 @@ suspend fun HttpResponse.asXml(): Document {
 fun String.asXml(): Document {
   val factory = DocumentBuilderFactory.newInstance()
   val builder = factory.newDocumentBuilder()
-  val body = this
+  val body = this.clean()
   body.byteInputStream().use {
     val document = builder.parse(it)
     return document
   }
+}
+
+private fun String.clean(): String {
+  return this.replace(Regex("[^\\x20-\\x7E]"), "")
 }
 
 inline fun <reified T> Document.getValueFromXml(key: String): T? {
