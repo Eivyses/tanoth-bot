@@ -26,6 +26,7 @@ fun String.asXml(): Document {
   }
 }
 
+// Remove invalid characters (for simplicity, remove non-ASCII characters here)
 private fun String.clean(): String {
   return this.replace(Regex("[^\\x20-\\x7E]"), "")
 }
