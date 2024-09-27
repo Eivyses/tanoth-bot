@@ -8,17 +8,26 @@ class GameService(sessionId: String) {
 
   suspend fun run(runeToUpgrade: ArcaneCircleItemType?, useGemsForAdventures: Boolean) {
     while (true) {
-      //      println("Player info:")
-      val currentPlayerInfo = tService.getCurrentPlayerInfo()
-      //      println(currentPlayerInfo)
+      try {
+        //      println("Player info:")
+        val currentPlayerInfo = tService.getCurrentPlayerInfo()
+        //      println(currentPlayerInfo)
 
-      runAdventureChecks(
-          playerGemsCount = currentPlayerInfo.gems, useGemsForAdventures = useGemsForAdventures)
-      runAttackChecks()
-      if (runeToUpgrade != null) {
-        runArcaneCircleChecks(currentPlayerInfo, runeToUpgrade)
+        runAdventureChecks(
+            playerGemsCount = currentPlayerInfo.gems, useGemsForAdventures = useGemsForAdventures)
+        runAttackChecks()
+        if (runeToUpgrade != null) {
+          runArcaneCircleChecks(currentPlayerInfo, runeToUpgrade)
+        }
+        //      println()
+      } catch (ex: Exception) {
+        if (ex.message != null && ex.message!!.contains("503 Service Unavailable")) {
+          println("Service unavailable, waiting...")
+          delay(120_000)
+        } else {
+          throw ex
+        }
       }
-      //      println()
 
       delay(30_000)
     }
