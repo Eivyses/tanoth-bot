@@ -24,6 +24,10 @@ class GameService(sessionId: String) {
         if (ex.message != null && ex.message!!.contains("503 Service Unavailable")) {
           println("Service unavailable, waiting...")
           delay(120_000)
+        } else if (ex.message != null &&
+            ex.message!!.contains("java.net.SocketException: Connection reset")) {
+          println("Connection reset, waiting...")
+          delay(120_000)
         } else {
           throw ex
         }
