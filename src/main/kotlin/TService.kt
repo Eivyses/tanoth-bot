@@ -2,9 +2,11 @@ package org.example
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.network.sockets.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import kotlinx.coroutines.delay
 import org.example.rest.*
 import org.w3c.dom.Document
 
@@ -65,12 +67,22 @@ class TService(private val sessionId: String) {
   }
 
   private suspend fun postBody(body: String): String {
-    val response =
-        client.post(postUrl) {
-          contentType(ContentType.Application.Xml)
-          setBody(body)
-        }
-    return response.readBytes().decodeToString()
+    while (true) {
+      try {
+        val response =
+            client.post(postUrl) {
+              contentType(ContentType.Application.Xml)
+              setBody(body)
+            }
+        return response.readBytes().decodeToString()
+      } catch (ex: ConnectTimeoutException) {
+        println("Timeout, retry...")
+        delay(10_000)
+      } catch (ex: Exception) {
+        println("Unexpected error while posting $body")
+        throw ex
+      }
+    }
   }
 
   private suspend fun <T> postBodyAndParseResult(body: String, resultParser: (Document) -> T): T {
