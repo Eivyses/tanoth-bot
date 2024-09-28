@@ -3,6 +3,7 @@ package org.example
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.network.sockets.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -76,6 +77,9 @@ class TService(private val sessionId: String) {
             }
         return response.readBytes().decodeToString()
       } catch (ex: ConnectTimeoutException) {
+        println("Timeout, retry...")
+        delay(10_000)
+      } catch (ex: HttpRequestTimeoutException) {
         println("Timeout, retry...")
         delay(10_000)
       } catch (ex: Exception) {
