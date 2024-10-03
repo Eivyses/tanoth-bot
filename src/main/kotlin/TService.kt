@@ -7,6 +7,7 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import java.net.SocketException
 import kotlinx.coroutines.delay
 import org.example.rest.*
 import org.w3c.dom.Document
@@ -36,7 +37,7 @@ class TService(private val sessionId: String) {
         }
   }
 
-  suspend fun attackPlayer(playerName: String): AttackResult {
+  suspend fun attackPlayer(playerName: String): AttackResult? {
     return postBodyAndParseResult(
         createPostBody(
             methodName = "Fight", sessionId = sessionId, extraStringParam = playerName)) {
@@ -82,6 +83,13 @@ class TService(private val sessionId: String) {
       } catch (ex: HttpRequestTimeoutException) {
         println("Timeout, retry...")
         delay(10_000)
+      } catch (ex: SocketException) {
+        if (ex.message!!.contains("Connection reset")) {
+          println("Timeout, retry...")
+          delay(10_000)
+        } else {
+          throw ex
+        }
       } catch (ex: Exception) {
         println("Unexpected error while posting $body")
         throw ex
@@ -93,10 +101,6 @@ class TService(private val sessionId: String) {
     val rawXml = postBody(body)
     try {
       val xml = rawXml.asXml()
-      val errorText = xml.getValueFromXml<String>("error")
-      if (errorText != null) {
-        throw RuntimeException("Failed to read response, error $errorText")
-      }
       return resultParser(xml)
     } catch (ex: Exception) {
       ex.printStackTrace()

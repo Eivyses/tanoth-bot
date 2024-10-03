@@ -79,8 +79,9 @@ fun Document.parseAsOtherPlayerInfo(): OtherPlayerInfo {
   return OtherPlayerInfo(name = name, level = level, id = id, guildName = guildName)
 }
 
-fun Document.parseAsAttackResult(): AttackResult {
-  val fame = this.getValueFromXml<Int>("achieved_fame")!!
+fun Document.parseAsAttackResult(): AttackResult? {
+  // rare case where username is not found
+  val fame = this.getValueFromXml<Int>("achieved_fame") ?: return null
   val gold = this.getValueFromXml<Int>("robbed_gold")!!
   val xp = this.getValueFromXml<Int>("xp")!!
 

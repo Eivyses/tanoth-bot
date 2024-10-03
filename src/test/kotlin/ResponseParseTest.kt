@@ -14,7 +14,7 @@ class ResponseParseTest {
     val fileContent = ResponseParseTest::class.java.getResource("attack_result1.xml")!!.readText()
     // opponent damage: 2798
     // my health: 7533
-    val attackResult = fileContent.asXml().parseAsAttackResult()
+    val attackResult = fileContent.asXml().parseAsAttackResult()!!
     assertTrue(attackResult.haveWon)
   }
 
