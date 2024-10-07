@@ -85,10 +85,11 @@ fun Document.parseAsAttackResult(): AttackResult? {
   val gold = this.getValueFromXml<Int>("robbed_gold")!!
   val xp = this.getValueFromXml<Int>("xp")!!
 
-  val enemyTotalDamage = this.getInnerValueFromXml<Int>("opponent", "total_damage")!!
+  val enemyPhysicalDamage = this.getInnerValueFromXml<Int>("opponent", "total_damage")!!
+  val enemySpellDamage = this.getInnerValueFromXml<Int>("opponent", "magic_damage")!!
   val playerHealth = this.getInnerValueFromXml<Int>("self", "hitpoints")!!
 
-  val haveWon = playerHealth > enemyTotalDamage
+  val haveWon = playerHealth > enemyPhysicalDamage + enemySpellDamage
   val resultFame = if (haveWon) fame else -fame
   return AttackResult(haveWon = haveWon, fame = resultFame, robbedGold = gold, xpEarned = xp)
 }

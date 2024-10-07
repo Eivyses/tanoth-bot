@@ -5,8 +5,13 @@ import kotlinx.coroutines.delay
 class GameService(sessionId: String) {
 
   private val tService = TService(sessionId)
+  private var attackTarget: OtherPlayerInfo? = null
 
-  suspend fun run(runeToUpgrade: ArcaneCircleItemType?, useGemsForAdventures: Boolean) {
+  suspend fun run(
+      runeToUpgrade: ArcaneCircleItemType?,
+      useGemsForAdventures: Boolean,
+      maxAttackPlayerLevel: Int?
+  ) {
     while (true) {
       try {
         //      println("Player info:")
@@ -15,7 +20,7 @@ class GameService(sessionId: String) {
 
         runAdventureChecks(
             playerGemsCount = currentPlayerInfo.gems, useGemsForAdventures = useGemsForAdventures)
-        runAttackChecks()
+        runAttackChecks(maxAttackPlayerLevel)
         if (runeToUpgrade != null) {
           runArcaneCircleChecks(currentPlayerInfo, runeToUpgrade)
         }
@@ -78,18 +83,45 @@ class GameService(sessionId: String) {
     return bestAdventure
   }
 
-  private suspend fun runAttackChecks() {
-    //    println()
-    //    println("Attack check...")
-    val randomEnemyResponse = tService.getRandomEnemy()
-    if (randomEnemyResponse.reattackCountdown > 0) {
-      //      println("Not yet available for ${countdown}s")
-      return
+  private suspend fun runAttackChecks(maxAttackPlayerLevel: Int?) {
+    while (true) {
+      delay(1_000)
+      //    println()
+      //    println("Attack check...")
+      val randomEnemyResponse = tService.getRandomEnemy()
+      if (randomEnemyResponse.reattackCountdown > 0) {
+        //      println("Not yet available for ${countdown}s")
+        return
+      }
+      if (attackTarget != null) {
+        val gold = attackAndGetGold(attackTarget!!)
+        // player name not found
+        if (gold == null) {
+          attackTarget = null
+          continue
+        }
+        if (gold < 50) {
+          attackTarget = null
+        }
+        return
+      }
+
+      if (randomEnemyResponse.otherPlayerInfo.guildName == "NarcoS") {
+        continue
+      }
+      if (maxAttackPlayerLevel != null &&
+          randomEnemyResponse.otherPlayerInfo.level > maxAttackPlayerLevel) {
+        continue
+      }
+      attackTarget = randomEnemyResponse.otherPlayerInfo
     }
-    println("Attack target: ${randomEnemyResponse.otherPlayerInfo}")
-    // TODO: add level checking
-    val attackResult = tService.attackPlayer(randomEnemyResponse.otherPlayerInfo.name)
+  }
+
+  private suspend fun attackAndGetGold(target: OtherPlayerInfo): Int? {
+    println("Attack target: $target")
+    val attackResult = tService.attackPlayer(target.name)
     println(attackResult)
+    return attackResult?.robbedGold
   }
 
   private suspend fun runArcaneCircleChecks(

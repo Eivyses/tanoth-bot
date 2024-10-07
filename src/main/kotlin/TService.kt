@@ -103,8 +103,7 @@ class TService(private val sessionId: String) {
       val xml = rawXml.asXml()
       return resultParser(xml)
     } catch (ex: Exception) {
-      ex.printStackTrace()
-      throw RuntimeException("Failed to read response for xml $rawXml")
+      throw RuntimeException("Failed to read response for xml $rawXml", ex)
     }
   }
 }

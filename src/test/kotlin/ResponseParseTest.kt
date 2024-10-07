@@ -10,12 +10,23 @@ import org.example.rest.parseAsCurrentPlayerInfo
 class ResponseParseTest {
 
   @Test
-  fun testAttackParse() {
+  fun testAttackParse1() {
     val fileContent = ResponseParseTest::class.java.getResource("attack_result1.xml")!!.readText()
     // opponent damage: 2798
     // my health: 7533
     val attackResult = fileContent.asXml().parseAsAttackResult()!!
     assertTrue(attackResult.haveWon)
+  }
+
+  @Test
+  fun testAttackParse2() {
+    val fileContent = ResponseParseTest::class.java.getResource("attack_result2.xml")!!.readText()
+    // opponent damage: 177360
+    // my health: 18792
+    val attackResult = fileContent.asXml().parseAsAttackResult()!!
+    assertFalse(attackResult.haveWon)
+    assertEquals(-76, attackResult.fame)
+    assertEquals(0, attackResult.robbedGold)
   }
 
   @Test
