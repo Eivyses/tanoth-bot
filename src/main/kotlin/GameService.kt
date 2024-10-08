@@ -1,10 +1,13 @@
 package org.example
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.delay
 
-class GameService(sessionId: String) {
+private val logger = KotlinLogging.logger {}
 
-  private val tService = TService(sessionId)
+class GameService(sessionId: String, gfToken: String?) {
+
+  private val tService = TService(sessionId, gfToken)
   private var attackTarget: OtherPlayerInfo? = null
 
   suspend fun run(
@@ -14,9 +17,9 @@ class GameService(sessionId: String) {
   ) {
     while (true) {
       try {
-        //      println("Player info:")
+        logger.debug { "Player info:" }
         val currentPlayerInfo = tService.getCurrentPlayerInfo()
-        //      println(currentPlayerInfo)
+        logger.debug { currentPlayerInfo }
 
         runAdventureChecks(
             playerGemsCount = currentPlayerInfo.gems, useGemsForAdventures = useGemsForAdventures)
@@ -24,14 +27,14 @@ class GameService(sessionId: String) {
         if (runeToUpgrade != null) {
           runArcaneCircleChecks(currentPlayerInfo, runeToUpgrade)
         }
-        //      println()
+        logger.debug {}
       } catch (ex: Exception) {
         if (ex.message != null && ex.message!!.contains("503 Service Unavailable")) {
-          println("Service unavailable, waiting...")
+          logger.warn { "Service unavailable, waiting..." }
           delay(120_000)
         } else if (ex.message != null &&
             ex.message!!.contains("java.net.SocketException: Connection reset")) {
-          println("Connection reset, waiting...")
+          logger.warn { "Connection reset, waiting..." }
           delay(120_000)
         } else {
           throw ex
@@ -43,33 +46,33 @@ class GameService(sessionId: String) {
   }
 
   private suspend fun runAdventureChecks(playerGemsCount: Int, useGemsForAdventures: Boolean) {
-    //    println()
-    //    println("Adventure check...")
+    logger.debug {}
+    logger.debug { "Adventure check..." }
     val adventureResponse = tService.getAdventures()
     if (adventureResponse == null) {
-      //      println("In work...")
+      logger.debug { "In work..." }
       return
     }
     val (runningTime, adventures, adventureResult) = adventureResponse
     if (runningTime != null) {
-      //      println("Adventure in progress for another ${runningTime}s")
+      logger.debug { "Adventure in progress for another ${runningTime}s" }
       return
     }
     if (adventureResult != null) {
-      println("Adventure finished!")
-      println(adventureResult)
+      logger.debug { "Adventure finished!" }
+      logger.debug { adventureResult }
       return
     }
 
     if (adventures == null) {
-      println("something went wrong...")
+      logger.warn { "something went wrong..." }
       return
     }
     if ((useGemsForAdventures && playerGemsCount > 0) ||
         adventures.adventuresMadeToday < adventures.freeAdventuresPerDay) {
       val bestAdventure = pickNextAdventure(adventures)
-      println(adventures.toPrettyString())
-      println("Best adventure: $bestAdventure")
+      logger.info { adventures.toPrettyString() }
+      logger.info { "Best adventure: $bestAdventure" }
       tService.postAdventure(bestAdventure.questId)
     }
   }
@@ -86,11 +89,11 @@ class GameService(sessionId: String) {
   private suspend fun runAttackChecks(maxAttackPlayerLevel: Int?) {
     while (true) {
       delay(1_000)
-      //    println()
-      //    println("Attack check...")
+      logger.debug {}
+      logger.debug { "Attack check..." }
       val randomEnemyResponse = tService.getRandomEnemy()
       if (randomEnemyResponse.reattackCountdown > 0) {
-        //      println("Not yet available for ${countdown}s")
+        logger.debug { "Not yet available for ${randomEnemyResponse.reattackCountdown}s" }
         return
       }
       if (attackTarget != null) {
@@ -118,9 +121,9 @@ class GameService(sessionId: String) {
   }
 
   private suspend fun attackAndGetGold(target: OtherPlayerInfo): Int? {
-    println("Attack target: $target")
+    logger.info { "Attack target: $target" }
     val attackResult = tService.attackPlayer(target.name)
-    println(attackResult)
+    logger.info { attackResult }
     return attackResult?.robbedGold
   }
 
@@ -128,17 +131,17 @@ class GameService(sessionId: String) {
       currentPlayerInfo: CurrentPlayerInfo,
       runeToUpgrade: ArcaneCircleItemType
   ) {
-    //    println()
-    //    println("Arcane Circle check...")
+    logger.debug {}
+    logger.debug { "Arcane Circle check..." }
     val arcaneCircleItems = tService.getArcaneCircle()
-    //      arcaneCircleItems.forEach { println(it) }
+    arcaneCircleItems.forEach { logger.trace { it } }
 
     val targetRune = arcaneCircleItems.first { it.arcaneCircleItemType == runeToUpgrade }
     if (targetRune.goldPrice < currentPlayerInfo.gold) {
-      println("Upgrading rune $targetRune")
+      logger.info { "Upgrading rune $targetRune" }
       tService.upgradeArcaneCircleNode(targetRune.arcaneCircleItemType.id)
     } else {
-      //      println("Not enough gold to upgrade $targetRune")
+      logger.debug { "Not enough gold to upgrade $targetRune" }
     }
   }
 }

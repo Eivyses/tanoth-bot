@@ -1,5 +1,6 @@
 package org.example
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.network.sockets.*
@@ -12,7 +13,9 @@ import kotlinx.coroutines.delay
 import org.example.rest.*
 import org.w3c.dom.Document
 
-class TService(private val sessionId: String) {
+private val logger = KotlinLogging.logger {}
+
+class TService(private var sessionId: String, private val gfToken: String?) {
 
   private val client = HttpClient(CIO)
   private val postUrl = "https://s1-en.tanoth.gameforge.com/xmlrpc"
@@ -78,20 +81,20 @@ class TService(private val sessionId: String) {
             }
         return response.readBytes().decodeToString()
       } catch (ex: ConnectTimeoutException) {
-        println("Timeout, retry...")
+        logger.warn { "Timeout, retry..." }
         delay(10_000)
       } catch (ex: HttpRequestTimeoutException) {
-        println("Timeout, retry...")
+        logger.warn { "Timeout, retry..." }
         delay(10_000)
       } catch (ex: SocketException) {
         if (ex.message!!.contains("Connection reset")) {
-          println("Timeout, retry...")
+          logger.warn { "Timeout, retry..." }
           delay(10_000)
         } else {
           throw ex
         }
       } catch (ex: Exception) {
-        println("Unexpected error while posting $body")
+        logger.error { "Unexpected error while posting $body" }
         throw ex
       }
     }
@@ -103,7 +106,16 @@ class TService(private val sessionId: String) {
       val xml = rawXml.asXml()
       return resultParser(xml)
     } catch (ex: Exception) {
-      throw RuntimeException("Failed to read response for xml $rawXml", ex)
+      if (rawXml.contains("no_valid_session") && gfToken != null) {
+        logger.warn { "Session expired, refreshing..." }
+        val newSessionId = TBrowser().getNewSessionId(gfToken)
+        val newBody = body.replace(sessionId, newSessionId)
+        sessionId = newSessionId
+        logger.warn { "New session id: $sessionId" }
+        return postBodyAndParseResult(body = newBody, resultParser = resultParser)
+      } else {
+        throw RuntimeException("Failed to read response for xml $rawXml", ex)
+      }
     }
   }
 }

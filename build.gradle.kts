@@ -5,7 +5,7 @@ plugins {
 
 group = "org.example"
 
-version = "0.2"
+version = "0.3"
 
 repositories { mavenCentral() }
 
@@ -20,6 +20,13 @@ dependencies {
   implementation("io.ktor:ktor-client-cio:$ktorVersion")
 
   testImplementation(kotlin("test"))
+
+  val seleniumVersion = "4.25.0"
+  implementation("org.seleniumhq.selenium:selenium-java:$seleniumVersion")
+  implementation("org.seleniumhq.selenium:selenium-chrome-driver:$seleniumVersion")
+  implementation("io.github.bonigarcia:webdrivermanager:5.9.2")
+
+  implementation("io.github.oshai:kotlin-logging-jvm:7.0.0")
 }
 
 tasks.test { useJUnitPlatform() }

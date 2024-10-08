@@ -1,0 +1,113 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Tanoth</title>
+    <meta http-equiv="expires" content="0">
+    <meta http-equiv="cache-control" content="no-cache">
+    <meta http-equiv="pragma" content="no-cache">
+    <meta name="author" content="Gameforge Productions GmbH">
+    <meta name="publisher" content="Gameforge Productions GmbH">
+    <meta name="copyright" content="Gameforge Productions GmbH">
+    <meta name="keywords" content="browsergame, legend, diablo, sacred, role play, rpg, game">
+    <meta name="description" content="The exciting browser game">
+    <meta name="page-topic" content="Computer/Software/Spiele">
+    <meta name="audience" content="Alle">
+    <meta name="page-type" content="Produktinfo">
+    <meta name="robots" content="index, follow">
+    <link rel="stylesheet" type="text/css" href="https://s1-en.tanoth.gameforge.com:443/css/client.css">
+
+    <meta id="viewport" name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=4.0, user-scalable=yes">
+
+    <style>
+        #paymentIframe {
+            margin-top: 30px;
+            border-style: none;
+            text-align: center;
+            width: 800px;
+            height: 600px;
+        }
+        #paymentOverlay{
+            position: fixed; /* Sit on top of the page content */
+            display: none; /* Hidden by default */
+            width: 100%; /* Full width (cover the whole page) */
+            height: 100%; /* Full height (cover the whole page) */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.8); /* Black background with opacity */
+            z-index: 2; /* Specify a stack order in case you're using a different order for other elements */
+            cursor: pointer; /* Add a pointer on hover */
+        }
+
+        .closePaymenButton {
+            font-weight: bold;
+            background: rgba(0,0,0,0);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            color: white;
+            border: 3px solid white;
+            position: fixed;
+            margin-left: 780px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        html,body { margin: 0; padding: 0; height: 100%; overflow: hidden; text-align: center; font-family: sans-serif; }
+        #openfl-content { margin: auto; background: #000000; width: 1024px; height: 716px; }
+
+    </style>
+
+</head>
+
+<body>
+<script type="text/javascript">
+    var flashvars = {
+        sessionID: "0i6m39u6c10b",
+        language: "en",
+        serverpath: "https://s1-en.tanoth.gameforge.com/xmlrpc",
+        forumLink: "https://forum.tanoth.gameforge.com/",
+        servertime: "1728406437",
+        basepath: "",
+        logoutRedirect: "https://s1-en.tanoth.gameforge.com:443/",
+        paymentLink: "https%3A%2F%2Fpurchase.gamepay.de%2Fxml%2Fpurchase.en%2Fjumpin%3Fgame_id%3Dtanothreborn%26user_id%3D4755%26server%3D1%26username%3DEivyses%26email%3Deivyses%2540gmail.com%26lang%3Den%26product_id%3Dlegend-c-curren%26display%3Dselectpm%26checksum%3D610201d0ccaa3dffd3d1c11f24625fc7",
+        chatserverPort: "9017",
+        isTestserver: false,
+        showGameEvent: true			};
+</script>
+
+
+<script type="text/javascript" src="./game/assets/js/gsap.min.js"></script>
+<script type="text/javascript" src="./game/assets/js/MotionPathPlugin.min.js"></script>
+<script type="text/javascript" src="./game/TanothHtml5.js"></script>
+<script>
+    function overlayOff() {
+        document.getElementById("paymentOverlay").style.display = "none";
+        document.getElementById("paymentIframe").remove();
+        var externals = new de.gameforge.util.external.ClientUpdater();
+        setTimeout(externals.triggerMiniUpdate,1500);
+    }
+</script>
+<div id="page">
+    <div class="page-wrapper">
+        <div id="openfl-content" style="cursor: default;">
+            <canvas style="transform: translateZ(0px); width: 1024px; height: 716px; margin-left: 0px; margin-top: 0px;"
+                    width="1336" height="934"></canvas>
+        </div>
+        <div id="paymentOverlay" onclick="overlayOff()">
+            <button class="close-button closePaymenButton" type="button" data-close="">
+                <span aria-hidden="true">X</span>
+            </button>
+        </div>
+        <script type="text/javascript">
+            lime.embed ("TanothHtml5", "openfl-content", 1024, 716, { rootPath: "./game/", parameters: {} });
+        </script>
+    </div>
+    <br class="clearfloat">
+</div>
+
+<script src="moz-extension://9b011bb9-d88e-4414-bddc-718054f1ce87/js/app.js" type="text/javascript"></script>
+</body>
+</html>
