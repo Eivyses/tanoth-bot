@@ -18,7 +18,7 @@ private val logger = KotlinLogging.logger {}
 
 suspend fun main(args: Array<String>) {
   disableKtorLogging()
-  //  disableChromiumLogging()
+  disableChromiumLogging()
 
   if (args.isEmpty()) {
     logger.error { "Please provide at least ${Args.SESSION_ID.value}. Other options are:" }

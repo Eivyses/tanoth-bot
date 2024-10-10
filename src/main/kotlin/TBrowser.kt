@@ -61,7 +61,7 @@ class TBrowser : AutoCloseable {
           addArguments("--proxy-bypass-list=*")
 
           // logs: 0 = ALL, 1 = INFO, 2 = WARNING, 3 = ERROR
-          //          addArguments("--log-level=3")
+          addArguments("--log-level=3")
 
           // anti bot options
           addArguments("--disable-blink-features=AutomationControlled")
