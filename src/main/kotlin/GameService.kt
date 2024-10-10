@@ -13,7 +13,8 @@ class GameService(sessionId: String, gfToken: String?) {
   suspend fun run(
       runeToUpgrade: ArcaneCircleItemType?,
       useGemsForAdventures: Boolean,
-      maxAttackPlayerLevel: Int?
+      maxAttackPlayerLevel: Int?,
+      prioritizeGold: Boolean
   ) {
     while (true) {
       try {
@@ -22,7 +23,9 @@ class GameService(sessionId: String, gfToken: String?) {
         logger.debug { currentPlayerInfo }
 
         runAdventureChecks(
-            playerGemsCount = currentPlayerInfo.gems, useGemsForAdventures = useGemsForAdventures)
+            playerGemsCount = currentPlayerInfo.gems,
+            useGemsForAdventures = useGemsForAdventures,
+            prioritizeGold = prioritizeGold)
         runAttackChecks(maxAttackPlayerLevel)
         if (runeToUpgrade != null) {
           runArcaneCircleChecks(currentPlayerInfo, runeToUpgrade)
@@ -45,7 +48,11 @@ class GameService(sessionId: String, gfToken: String?) {
     }
   }
 
-  private suspend fun runAdventureChecks(playerGemsCount: Int, useGemsForAdventures: Boolean) {
+  private suspend fun runAdventureChecks(
+      playerGemsCount: Int,
+      useGemsForAdventures: Boolean,
+      prioritizeGold: Boolean
+  ) {
     logger.debug {}
     logger.debug { "Adventure check..." }
     val adventureResponse = tService.getAdventures()
@@ -70,20 +77,24 @@ class GameService(sessionId: String, gfToken: String?) {
     }
     if ((useGemsForAdventures && playerGemsCount > 0) ||
         adventures.adventuresMadeToday < adventures.freeAdventuresPerDay) {
-      val bestAdventure = pickNextAdventure(adventures)
+      val bestAdventure =
+          pickNextAdventure(adventures = adventures, prioritizeGold = prioritizeGold)
       logger.info { adventures.toPrettyString() }
       logger.info { "Best adventure: $bestAdventure" }
       tService.postAdventure(bestAdventure.questId)
     }
   }
 
-  private fun pickNextAdventure(adventures: Adventures): Adventure {
-    val bestAdventure =
-        adventures.adventures
-            .sortedByDescending { it.experience }
-            .first { it.difficulty != Difficulty.VERY_DIFFICULT }
-
-    return bestAdventure
+  private fun pickNextAdventure(adventures: Adventures, prioritizeGold: Boolean): Adventure {
+    return if (prioritizeGold) {
+      adventures.adventures
+          .sortedByDescending { it.gold }
+          .first { it.difficulty != Difficulty.VERY_DIFFICULT }
+    } else {
+      adventures.adventures
+          .sortedByDescending { it.experience }
+          .first { it.difficulty != Difficulty.VERY_DIFFICULT }
+    }
   }
 
   private suspend fun runAttackChecks(maxAttackPlayerLevel: Int?) {
