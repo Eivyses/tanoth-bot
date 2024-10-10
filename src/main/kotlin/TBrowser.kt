@@ -48,13 +48,20 @@ class TBrowser : AutoCloseable {
 
     val options =
         ChromeOptions().apply {
-          addArguments("--headless")
+          addArguments("--headless=new")
           addArguments("--disable-gpu")
           addArguments("--no-sandbox")
           addArguments("--disable-dev-shm-usage")
           addArguments("--mute-audio")
+
+          // headless performance options
+          addArguments("--window-size=1920,1080")
+          addArguments("--window-position=0,0")
+          addArguments("--proxy-server='direct://'")
+          addArguments("--proxy-bypass-list=*")
+
           // logs: 0 = ALL, 1 = INFO, 2 = WARNING, 3 = ERROR
-          addArguments("--log-level=3")
+          //          addArguments("--log-level=3")
 
           // anti bot options
           addArguments("--disable-blink-features=AutomationControlled")

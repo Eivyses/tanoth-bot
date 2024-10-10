@@ -5,7 +5,7 @@ plugins {
 
 group = "org.example"
 
-version = "0.3"
+version = "0.4"
 
 repositories { mavenCentral() }
 
@@ -24,6 +24,7 @@ dependencies {
   val seleniumVersion = "4.25.0"
   implementation("org.seleniumhq.selenium:selenium-java:$seleniumVersion")
   implementation("org.seleniumhq.selenium:selenium-chrome-driver:$seleniumVersion")
+  implementation("org.seleniumhq.selenium:selenium-devtools-v129:$seleniumVersion")
   implementation("io.github.bonigarcia:webdrivermanager:5.9.2")
 
   implementation("io.github.oshai:kotlin-logging-jvm:7.0.0")
