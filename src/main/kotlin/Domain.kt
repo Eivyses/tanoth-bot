@@ -5,17 +5,16 @@ data class Adventures(
     val freeAdventuresPerDay: Int,
     val adventures: List<Adventure>
 ) {
-  fun toPrettyString(): String {
-    var str = "adventuresMadeToday: $adventuresMadeToday\n"
-    str += "freeAdventuresPerDay: $freeAdventuresPerDay\n"
-    str += "adventures:"
+  fun toPrettyString(): List<String> {
+    val result = mutableListOf<String>()
+    result += "adventuresMadeToday: $adventuresMadeToday\n"
+    result += "freeAdventuresPerDay: $freeAdventuresPerDay\n"
+    result += "adventures:"
     adventures.forEach { adventure ->
-      str += "\n"
-      str += "  gold: ${adventure.gold}, "
-      str += "exp: ${adventure.experience}, "
-      str += "difficulty: ${adventure.difficulty}"
+      result +=
+          "  gold: ${adventure.gold}, exp: ${adventure.experience}, difficulty: ${adventure.difficulty}"
     }
-    return str
+    return result.toList()
   }
 }
 

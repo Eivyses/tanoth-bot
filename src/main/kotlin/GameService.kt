@@ -14,7 +14,8 @@ class GameService(sessionId: String, gfToken: String?) {
       runeToUpgrade: ArcaneCircleItemType?,
       useGemsForAdventures: Boolean,
       maxAttackPlayerLevel: Int?,
-      prioritizeGold: Boolean
+      prioritizeGold: Boolean,
+      autoRunes: Boolean
   ) {
     while (true) {
       try {
@@ -27,9 +28,10 @@ class GameService(sessionId: String, gfToken: String?) {
             useGemsForAdventures = useGemsForAdventures,
             prioritizeGold = prioritizeGold)
         runAttackChecks(maxAttackPlayerLevel)
-        if (runeToUpgrade != null) {
-          runArcaneCircleChecks(currentPlayerInfo, runeToUpgrade)
-        }
+        runArcaneCircleChecks(
+            currentPlayerInfo = currentPlayerInfo,
+            runeToUpgrade = runeToUpgrade,
+            autoRunes = autoRunes)
         logger.debug {}
       } catch (ex: Exception) {
         if (ex.message != null && ex.message!!.contains("503 Service Unavailable")) {
@@ -79,7 +81,7 @@ class GameService(sessionId: String, gfToken: String?) {
         adventures.adventuresMadeToday < adventures.freeAdventuresPerDay) {
       val bestAdventure =
           pickNextAdventure(adventures = adventures, prioritizeGold = prioritizeGold)
-      logger.info { adventures.toPrettyString() }
+      adventures.toPrettyString().forEach { logger.info { it } }
       logger.info { "Best adventure: $bestAdventure" }
       tService.postAdventure(bestAdventure.questId)
     }
@@ -140,14 +142,27 @@ class GameService(sessionId: String, gfToken: String?) {
 
   private suspend fun runArcaneCircleChecks(
       currentPlayerInfo: CurrentPlayerInfo,
-      runeToUpgrade: ArcaneCircleItemType
+      runeToUpgrade: ArcaneCircleItemType?,
+      autoRunes: Boolean
   ) {
     logger.debug {}
     logger.debug { "Arcane Circle check..." }
     val arcaneCircleItems = tService.getArcaneCircle()
     arcaneCircleItems.forEach { logger.trace { it } }
 
-    val targetRune = arcaneCircleItems.first { it.arcaneCircleItemType == runeToUpgrade }
+    val targetRune =
+        if (runeToUpgrade != null) {
+          arcaneCircleItems.first { it.arcaneCircleItemType == runeToUpgrade }
+        } else if (autoRunes) {
+          getNextRuneToUpgrade(arcaneCircleItems)
+        } else {
+          null
+        }
+    if (targetRune == null) {
+      logger.debug { "No rune was found to upgrade" }
+      return
+    }
+
     if (targetRune.goldPrice < currentPlayerInfo.gold) {
       logger.info { "Upgrading rune $targetRune" }
       tService.upgradeArcaneCircleNode(targetRune.arcaneCircleItemType.id)
@@ -155,4 +170,45 @@ class GameService(sessionId: String, gfToken: String?) {
       logger.debug { "Not enough gold to upgrade $targetRune" }
     }
   }
+
+  private fun getNextRuneToUpgrade(arcaneCircleItems: List<ArcaneCircleItem>): ArcaneCircleItem {
+    val skullLevel =
+        arcaneCircleItems
+            .first { it.arcaneCircleItemType == ArcaneCircleItemType.DEMON_SKULL }
+            .level
+    logger.debug { "Current skull level: $skullLevel" }
+    orderedRunes.forEach { rune ->
+      val targetLevel =
+          when {
+            rune == ArcaneCircleItemType.JADE -> (skullLevel + 2) * 100
+            rune.name.startsWith("RUNE") -> (skullLevel + 1) * 10
+            rune == ArcaneCircleItemType.DEMON_SKULL -> skullLevel + 1
+            else -> (skullLevel + 1) * 100
+          }
+      val currentRune = arcaneCircleItems.first { it.arcaneCircleItemType == rune }
+      if (currentRune.level < targetLevel) {
+        return currentRune
+      }
+    }
+    throw RuntimeException("This should never be reached")
+  }
 }
+
+private val orderedRunes =
+    listOf(
+        ArcaneCircleItemType.JADE,
+        ArcaneCircleItemType.EMERALD,
+        ArcaneCircleItemType.AMETHYST,
+        ArcaneCircleItemType.DIAMOND,
+        ArcaneCircleItemType.TIGERS_EYE,
+        ArcaneCircleItemType.RUNE_OF_GLORY,
+        ArcaneCircleItemType.AMBER,
+        ArcaneCircleItemType.RUBY,
+        ArcaneCircleItemType.TOPAZ,
+        ArcaneCircleItemType.SAPPHIRE,
+        ArcaneCircleItemType.AQUAMARINE,
+        ArcaneCircleItemType.RUNE_OF_NEGOTIATION,
+        ArcaneCircleItemType.RUNE_OF_WISDOM,
+        ArcaneCircleItemType.RUNE_OF_DILIGENCE,
+        ArcaneCircleItemType.RUNE_OF_COURAGE,
+        ArcaneCircleItemType.DEMON_SKULL)
