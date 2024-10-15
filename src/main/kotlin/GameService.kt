@@ -68,8 +68,8 @@ class GameService(sessionId: String, gfToken: String?) {
       return
     }
     if (adventureResult != null) {
-      logger.debug { "Adventure finished!" }
-      logger.debug { adventureResult }
+      logger.info { "Adventure finished!" }
+      logger.info { adventureResult }
       return
     }
 

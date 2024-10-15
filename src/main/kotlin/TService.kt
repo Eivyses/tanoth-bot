@@ -8,10 +8,11 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import java.net.SocketException
 import kotlinx.coroutines.delay
 import org.example.rest.*
 import org.w3c.dom.Document
+import java.io.IOException
+import java.net.SocketException
 
 private val logger = KotlinLogging.logger {}
 
@@ -88,6 +89,13 @@ class TService(private var sessionId: String, private val gfToken: String?) {
         delay(10_000)
       } catch (ex: SocketException) {
         if (ex.message!!.contains("Connection reset")) {
+          logger.warn { "Timeout, retry..." }
+          delay(10_000)
+        } else {
+          throw ex
+        }
+      } catch (ex: IOException) {
+        if (ex.message!!.contains("Connection timed out")) {
           logger.warn { "Timeout, retry..." }
           delay(10_000)
         } else {
