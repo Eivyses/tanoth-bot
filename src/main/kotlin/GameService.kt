@@ -9,6 +9,7 @@ class GameService(sessionId: String, gfToken: String?) {
 
   private val tService = TService(sessionId, gfToken)
   private var attackTarget: OtherPlayerInfo? = null
+  private var stolenGold: Int = 0
 
   suspend fun run(
       runeToUpgrade: ArcaneCircleItemType?,
@@ -114,10 +115,16 @@ class GameService(sessionId: String, gfToken: String?) {
         // player name not found
         if (gold == null) {
           attackTarget = null
+          stolenGold = 0
           continue
+        }
+        stolenGold += gold
+        if (stolenGold > 50) {
+          logger.info { "Currently stolen from player $stolenGold" }
         }
         if (gold < 50) {
           attackTarget = null
+          stolenGold = 0
         }
         return
       }
@@ -145,8 +152,24 @@ class GameService(sessionId: String, gfToken: String?) {
       runeToUpgrade: ArcaneCircleItemType?,
       autoRunes: Boolean
   ) {
+    if (runeToUpgrade == null && !autoRunes) {
+      return
+    }
     logger.debug {}
     logger.debug { "Arcane Circle check..." }
+    var playerGold = currentPlayerInfo.gold
+
+    do {
+      val didUpgrade = pickAndUpgradeRune(playerGold, runeToUpgrade, autoRunes)
+      playerGold = tService.getCurrentPlayerInfo().gold
+    } while (didUpgrade)
+  }
+
+  private suspend fun pickAndUpgradeRune(
+      playerGold: Int,
+      runeToUpgrade: ArcaneCircleItemType?,
+      autoRunes: Boolean
+  ): Boolean {
     val arcaneCircleItems = tService.getArcaneCircle()
     arcaneCircleItems.forEach { logger.trace { it } }
 
@@ -160,14 +183,16 @@ class GameService(sessionId: String, gfToken: String?) {
         }
     if (targetRune == null) {
       logger.debug { "No rune was found to upgrade" }
-      return
+      return false
     }
 
-    if (targetRune.goldPrice < currentPlayerInfo.gold) {
+    if (targetRune.goldPrice < playerGold) {
       logger.info { "Upgrading rune $targetRune" }
       tService.upgradeArcaneCircleNode(targetRune.arcaneCircleItemType.id)
+      return true
     } else {
       logger.debug { "Not enough gold to upgrade $targetRune" }
+      return false
     }
   }
 

@@ -1,7 +1,9 @@
 package org.example
 
 import io.github.bonigarcia.wdm.WebDriverManager
+import io.github.oshai.kotlinlogging.KotlinLogging
 import java.time.Duration
+import kotlinx.coroutines.delay
 import org.openqa.selenium.By
 import org.openqa.selenium.Cookie
 import org.openqa.selenium.JavascriptExecutor
@@ -12,11 +14,13 @@ import org.openqa.selenium.support.ui.ExpectedCondition
 import org.openqa.selenium.support.ui.ExpectedConditions
 import org.openqa.selenium.support.ui.WebDriverWait
 
+private val logger = KotlinLogging.logger {}
+
 class TBrowser : AutoCloseable {
 
   private lateinit var driver: WebDriver
 
-  fun getNewSessionId(gfToken: String): String {
+  suspend fun getNewSessionId(gfToken: String): String {
     use {
       val options = getBrowserOptions()
       driver = ChromeDriver(options)
@@ -26,9 +30,18 @@ class TBrowser : AutoCloseable {
       driver.navigate().refresh()
 
       val wait = WebDriverWait(driver, Duration.ofSeconds(10))
-      val element =
-          wait.until(ExpectedConditions.elementToBeClickable(By.className("button-default")))
-      element.click()
+      // wait for normal PLAY button to be visible
+      wait.until(ExpectedConditions.elementToBeClickable(By.className("button-primary")))
+      var buttonsList = driver.findElements(By.className("button-default"))
+      // if last played button is not there then it means that server is in maintenance mode
+      while (buttonsList.isEmpty()) {
+        logger.warn { "Server in maintenance mode, waiting..." }
+        delay(300_000)
+        driver.navigate().refresh()
+        wait.until(ExpectedConditions.elementToBeClickable(By.className("button-primary")))
+        buttonsList = driver.findElements(By.className("button-default"))
+      }
+      buttonsList.first().click()
       // game opens in new tab
       driver.switchTo().window(driver.windowHandles.last())
       // takes a while to load, flashvars is a good indication when it's ready
