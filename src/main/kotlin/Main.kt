@@ -22,7 +22,9 @@ private enum class Args(val value: String, val descriptions: String) {
       "Whether to prioritize adventures that give more gold or not, if not will prioritize xp, optional"),
   AUTO_RUNES(
       "--auto-runes",
-      "Automatically upgrade runes in predefined order so that skull can be upgraded optimally, optional")
+      "Automatically upgrade runes in predefined order so that skull can be upgraded optimally, optional"),
+  MAX_DIFFICULTY(
+      "--max-difficulty", "Set max difficulty of adventures to do, default DIFFICULT, optional")
 }
 
 private val logger = KotlinLogging.logger {}
@@ -54,6 +56,8 @@ suspend fun main(args: Array<String>) {
   val gfToken = argsMap[Args.GF_TOKEN.value]
   val prioritizeGold = Args.PRIORITIZE_GOLD.value in argsMap
   val autoRunes = Args.AUTO_RUNES.value in argsMap
+  val maxDifficulty =
+      argsMap[Args.MAX_DIFFICULTY.value]?.let { Difficulty.valueOf(it) } ?: Difficulty.DIFFICULT
 
   if (sessionId == null && gfToken == null) {
     logger.error { "No sessionId or gfToken provided" }
@@ -72,6 +76,7 @@ suspend fun main(args: Array<String>) {
   logger.info { "Can use gems for adventures: $useGemsForAdventures" }
   logger.info { "Prioritize gold: $prioritizeGold" }
   logger.info { "Auto upgrade runes: $autoRunes" }
+  logger.info { "Max adventure difficulty: $maxDifficulty" }
   runeToUpgrade?.let { logger.info { "Using rune $it to upgrade" } }
   maxAttackPlayerLevel?.let { logger.info { "Attacking players that are max $it level" } }
   gfToken?.let { logger.info { "Using provided gf token $it" } }
@@ -88,7 +93,8 @@ suspend fun main(args: Array<String>) {
       useGemsForAdventures = useGemsForAdventures,
       maxAttackPlayerLevel = maxAttackPlayerLevel,
       prioritizeGold = prioritizeGold,
-      autoRunes = autoRunes)
+      autoRunes = autoRunes,
+      maxDifficulty = maxDifficulty)
 }
 
 private fun parseArgs(args: Array<String>): Map<String, String?> {

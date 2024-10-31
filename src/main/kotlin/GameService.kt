@@ -16,7 +16,8 @@ class GameService(sessionId: String, gfToken: String?) {
       useGemsForAdventures: Boolean,
       maxAttackPlayerLevel: Int?,
       prioritizeGold: Boolean,
-      autoRunes: Boolean
+      autoRunes: Boolean,
+      maxDifficulty: Difficulty
   ) {
     while (true) {
       try {
@@ -27,7 +28,8 @@ class GameService(sessionId: String, gfToken: String?) {
         runAdventureChecks(
             playerGemsCount = currentPlayerInfo.gems,
             useGemsForAdventures = useGemsForAdventures,
-            prioritizeGold = prioritizeGold)
+            prioritizeGold = prioritizeGold,
+            maxDifficulty = maxDifficulty)
         runAttackChecks(maxAttackPlayerLevel)
         runArcaneCircleChecks(
             currentPlayerInfo = currentPlayerInfo,
@@ -43,7 +45,7 @@ class GameService(sessionId: String, gfToken: String?) {
           logger.warn { "Connection reset, waiting..." }
           delay(120_000)
         } else {
-          throw ex
+          logger.error { "Something went wrong: $ex ${ex.message}" }
         }
       }
 
@@ -54,7 +56,8 @@ class GameService(sessionId: String, gfToken: String?) {
   private suspend fun runAdventureChecks(
       playerGemsCount: Int,
       useGemsForAdventures: Boolean,
-      prioritizeGold: Boolean
+      prioritizeGold: Boolean,
+      maxDifficulty: Difficulty
   ) {
     logger.debug {}
     logger.debug { "Adventure check..." }
@@ -81,23 +84,31 @@ class GameService(sessionId: String, gfToken: String?) {
     if ((useGemsForAdventures && playerGemsCount > 0) ||
         adventures.adventuresMadeToday < adventures.freeAdventuresPerDay) {
       val bestAdventure =
-          pickNextAdventure(adventures = adventures, prioritizeGold = prioritizeGold)
+          pickNextAdventure(
+              adventures = adventures,
+              prioritizeGold = prioritizeGold,
+              maxDifficulty = maxDifficulty)
       adventures.toPrettyString().forEach { logger.info { it } }
       logger.info { "Best adventure: $bestAdventure" }
       tService.postAdventure(bestAdventure.questId)
     }
   }
 
-  private fun pickNextAdventure(adventures: Adventures, prioritizeGold: Boolean): Adventure {
-    return if (prioritizeGold) {
-      adventures.adventures
-          .sortedByDescending { it.gold }
-          .first { it.difficulty != Difficulty.VERY_DIFFICULT }
-    } else {
-      adventures.adventures
-          .sortedByDescending { it.experience }
-          .first { it.difficulty != Difficulty.VERY_DIFFICULT }
-    }
+  private fun pickNextAdventure(
+      adventures: Adventures,
+      prioritizeGold: Boolean,
+      maxDifficulty: Difficulty
+  ): Adventure {
+    val sortedByPriority =
+        adventures.adventures.sortedByDescending {
+          if (prioritizeGold) {
+            it.gold
+          } else {
+            it.experience
+          }
+        }
+
+    return sortedByPriority.first { it.difficulty.value <= maxDifficulty.value }
   }
 
   private suspend fun runAttackChecks(maxAttackPlayerLevel: Int?) {
