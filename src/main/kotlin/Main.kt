@@ -10,6 +10,7 @@ private enum class Args(val value: String, val descriptions: String) {
       "--session-id",
       "<string> Currently active session id, --session-id or --gf-token must be provided"),
   RUNE("--rune", "<string> Rune to upgrade, optional"),
+  ATTRIBUTE("--attribute", "<string> Attribute to upgrade, optional"),
   USE_GEMS_FOR_ADVENTURES("--use-gems-for-adventures", "Use gems when doing adventures, optional"),
   MAX_ATTACK_PLAYER_LEVEL(
       "--max-attack-player-level",
@@ -23,6 +24,8 @@ private enum class Args(val value: String, val descriptions: String) {
   AUTO_RUNES(
       "--auto-runes",
       "Automatically upgrade runes in predefined order so that skull can be upgraded optimally, optional"),
+  AUTO_ATTRIBUTES(
+      "--auto-attributes", "Automatically upgrade attributes in predefined order, optional"),
   MAX_DIFFICULTY(
       "--max-difficulty", "Set max difficulty of adventures to do, default DIFFICULT, optional")
 }
@@ -51,11 +54,13 @@ suspend fun main(args: Array<String>) {
 
   var sessionId = argsMap[Args.SESSION_ID.value]
   val rune = argsMap[Args.RUNE.value]
+  val attribute = argsMap[Args.ATTRIBUTE.value]
   val useGemsForAdventures = Args.USE_GEMS_FOR_ADVENTURES.value in argsMap
   val maxAttackPlayerLevel = argsMap[Args.MAX_ATTACK_PLAYER_LEVEL.value]?.toInt()
   val gfToken = argsMap[Args.GF_TOKEN.value]
   val prioritizeGold = Args.PRIORITIZE_GOLD.value in argsMap
   val autoRunes = Args.AUTO_RUNES.value in argsMap
+  val autoAttributes = Args.AUTO_ATTRIBUTES.value in argsMap
   val maxDifficulty =
       argsMap[Args.MAX_DIFFICULTY.value]?.let { Difficulty.valueOf(it) } ?: Difficulty.DIFFICULT
 
@@ -69,15 +74,25 @@ suspend fun main(args: Array<String>) {
     return
   }
 
+  if (autoAttributes && attribute != null) {
+    logger.error {
+      "Cannot use both ${Args.AUTO_ATTRIBUTES.value} and ${Args.ATTRIBUTE.value} together"
+    }
+    return
+  }
+
   val runeToUpgrade = rune?.let { ArcaneCircleItemType.valueOf(it) }
+  val attributeToUpgrade = attribute?.let { AttributeType.valueOf(it) }
 
   logger.info { "Preparing app for usage..." }
   logger.info { "Using sessionId $sessionId" }
   logger.info { "Can use gems for adventures: $useGemsForAdventures" }
   logger.info { "Prioritize gold: $prioritizeGold" }
   logger.info { "Auto upgrade runes: $autoRunes" }
+  logger.info { "Auto upgrade attributes: $autoAttributes" }
   logger.info { "Max adventure difficulty: $maxDifficulty" }
   runeToUpgrade?.let { logger.info { "Using rune $it to upgrade" } }
+  attributeToUpgrade?.let { logger.info { "Using attribute $it to upgrade" } }
   maxAttackPlayerLevel?.let { logger.info { "Attacking players that are max $it level" } }
   gfToken?.let { logger.info { "Using provided gf token $it" } }
 
@@ -90,10 +105,12 @@ suspend fun main(args: Array<String>) {
   val gameService = GameService(sessionId = sessionId, gfToken = gfToken)
   gameService.run(
       runeToUpgrade = runeToUpgrade,
+      attributeToUpgrade = attributeToUpgrade,
       useGemsForAdventures = useGemsForAdventures,
       maxAttackPlayerLevel = maxAttackPlayerLevel,
       prioritizeGold = prioritizeGold,
       autoRunes = autoRunes,
+      autoAttributes = autoAttributes,
       maxDifficulty = maxDifficulty)
 }
 

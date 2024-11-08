@@ -138,3 +138,24 @@ fun Document.parseAsCurrentPlayerInfo(): CurrentPlayerInfo {
 
   return CurrentPlayerInfo(gems = gems, gold = gold, fame = fame)
 }
+
+fun Document.parseAsUserAttributesResponse(): UserAttributesResponse {
+  val conBase = this.getValueFromXml<Int>("con_base")!!
+  val costCon = this.getValueFromXml<Int>("cost_con")!!
+
+  val dexBase = this.getValueFromXml<Int>("dex_base")!!
+  val costDex = this.getValueFromXml<Int>("cost_dex")!!
+
+  val intBase = this.getValueFromXml<Int>("int_base")!!
+  val costInt = this.getValueFromXml<Int>("cost_int")!!
+
+  val strBase = this.getValueFromXml<Int>("str_base")!!
+  val costStr = this.getValueFromXml<Int>("cost_str")!!
+
+  return UserAttributesResponse(
+      mapOf(
+          AttributeType.CON to UserAttribute(attributeCost = costCon, attributeBase = conBase),
+          AttributeType.DEX to UserAttribute(attributeCost = costDex, attributeBase = dexBase),
+          AttributeType.INT to UserAttribute(attributeCost = costInt, attributeBase = intBase),
+          AttributeType.STR to UserAttribute(attributeCost = costStr, attributeBase = strBase)))
+}

@@ -66,10 +66,25 @@ class TService(private var sessionId: String, private val gfToken: String?) {
             extraIntParam = nodeId))
   }
 
+  suspend fun upgradeAttribute(attribute: AttributeType) {
+    postBody(
+        createPostBody(
+            methodName = "RaiseAttribute",
+            sessionId = sessionId,
+            extraStringParam = attribute.value))
+  }
+
   suspend fun getCurrentPlayerInfo(): CurrentPlayerInfo {
     return postBodyAndParseResult(
         createPostBody(methodName = "MiniUpdate", sessionId = sessionId)) {
           it.parseAsCurrentPlayerInfo()
+        }
+  }
+
+  suspend fun geUserAttributes(): UserAttributesResponse {
+    return postBodyAndParseResult(
+        createPostBody(methodName = "GetUserAttributes", sessionId = sessionId)) {
+          it.parseAsUserAttributesResponse()
         }
   }
 

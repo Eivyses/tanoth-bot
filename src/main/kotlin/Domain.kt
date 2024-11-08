@@ -69,6 +69,8 @@ data class AdventureResponse(
     val adventureResult: AdventureResult?
 )
 
+data class UserAttributesResponse(val userAttributes: Map<AttributeType, UserAttribute>)
+
 enum class ArcaneCircleItemType(val id: Int, val effect: String) {
   AMETHYST(id = 1, effect = "More gold in adventures"),
   AMBER(id = 2, effect = "Higher wages"),
@@ -97,3 +99,12 @@ data class ArcaneCircleItem(
 )
 
 data class CurrentPlayerInfo(val gems: Int, val gold: Int, val fame: Int)
+
+enum class AttributeType(val value: String) {
+  CON("CON"),
+  STR("STR"),
+  DEX("DEX"),
+  INT("INT")
+}
+
+data class UserAttribute(val attributeCost: Int, val attributeBase: Int)

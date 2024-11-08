@@ -17,6 +17,8 @@ class GameService(sessionId: String, gfToken: String?) {
       maxAttackPlayerLevel: Int?,
       prioritizeGold: Boolean,
       autoRunes: Boolean,
+      attributeToUpgrade: AttributeType?,
+      autoAttributes: Boolean,
       maxDifficulty: Difficulty
   ) {
     while (true) {
@@ -35,6 +37,10 @@ class GameService(sessionId: String, gfToken: String?) {
             currentPlayerInfo = currentPlayerInfo,
             runeToUpgrade = runeToUpgrade,
             autoRunes = autoRunes)
+        runAttributeUpgradeChecks(
+            currentPlayerInfo = currentPlayerInfo,
+            attributeToUpgrade = attributeToUpgrade,
+            autoAttributes = autoAttributes)
         logger.debug {}
       } catch (ex: Exception) {
         if (ex.message != null && ex.message!!.contains("503 Service Unavailable")) {
@@ -158,6 +164,24 @@ class GameService(sessionId: String, gfToken: String?) {
     return attackResult?.robbedGold
   }
 
+  private suspend fun runAttributeUpgradeChecks(
+      currentPlayerInfo: CurrentPlayerInfo,
+      attributeToUpgrade: AttributeType?,
+      autoAttributes: Boolean
+  ) {
+    if (attributeToUpgrade == null && !autoAttributes) {
+      return
+    }
+    logger.debug {}
+    logger.debug { "Attribute upgrade check..." }
+    var playerGold = currentPlayerInfo.gold
+
+    do {
+      val didUpgrade = pickAndUpgradeAttribute(playerGold, attributeToUpgrade, autoAttributes)
+      playerGold = tService.getCurrentPlayerInfo().gold
+    } while (didUpgrade)
+  }
+
   private suspend fun runArcaneCircleChecks(
       currentPlayerInfo: CurrentPlayerInfo,
       runeToUpgrade: ArcaneCircleItemType?,
@@ -227,6 +251,53 @@ class GameService(sessionId: String, gfToken: String?) {
       }
     }
     throw RuntimeException("This should never be reached")
+  }
+
+  private suspend fun pickAndUpgradeAttribute(
+      playerGold: Int,
+      attributeToUpgrade: AttributeType?,
+      autoAttributes: Boolean
+  ): Boolean {
+    val attributes = tService.geUserAttributes().userAttributes
+    attributes.forEach { logger.trace { it } }
+
+    val targetAttribute =
+        if (attributeToUpgrade != null) {
+          attributeToUpgrade
+        } else if (autoAttributes) {
+          getNextAttributeToUpgrade(attributes)
+        } else {
+          null
+        }
+
+    if (targetAttribute == null) {
+      logger.debug { "No attribute was found to upgrade" }
+      return false
+    }
+
+    val attribute = attributes.getValue(targetAttribute)
+    if (attribute.attributeCost < playerGold) {
+      logger.info { "Upgrading attribute $attribute" }
+      tService.upgradeAttribute(targetAttribute)
+      return true
+    } else {
+      logger.debug { "Not enough gold to upgrade $attribute" }
+      return false
+    }
+  }
+
+  private fun getNextAttributeToUpgrade(
+      attributes: Map<AttributeType, UserAttribute>
+  ): AttributeType {
+    val cheapest = attributes.minBy { it.value.attributeCost }
+    if (cheapest.value.attributeCost < 2000) {
+      return cheapest.key
+    }
+    val intPrice = attributes.getValue(AttributeType.INT).attributeCost
+    if (cheapest.value.attributeCost * 2 < intPrice) {
+      return cheapest.key
+    }
+    return AttributeType.INT
   }
 }
 

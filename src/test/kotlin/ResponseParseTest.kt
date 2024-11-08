@@ -2,10 +2,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import org.example.rest.asXml
-import org.example.rest.parseAsAdventureResult
-import org.example.rest.parseAsAttackResult
-import org.example.rest.parseAsCurrentPlayerInfo
+import org.example.AttributeType
+import org.example.rest.*
 
 class ResponseParseTest {
 
@@ -61,5 +59,21 @@ class ResponseParseTest {
     val currentPlayerInfo = fileContent.asXml().parseAsCurrentPlayerInfo()
     assertEquals(3604, currentPlayerInfo.gold)
     assertEquals(1672, currentPlayerInfo.fame)
+  }
+
+  @Test
+  fun testUserAttributes() {
+    val fileContent = ResponseParseTest::class.java.getResource("user_attributes.xml")!!.readText()
+    val userAttributes = fileContent.asXml().parseAsUserAttributesResponse().userAttributes
+
+    assertEquals(2000, userAttributes.getValue(AttributeType.CON).attributeCost)
+    assertEquals(3000, userAttributes.getValue(AttributeType.DEX).attributeCost)
+    assertEquals(1800, userAttributes.getValue(AttributeType.INT).attributeCost)
+    assertEquals(1000, userAttributes.getValue(AttributeType.STR).attributeCost)
+
+    assertEquals(623, userAttributes.getValue(AttributeType.CON).attributeBase)
+    assertEquals(700, userAttributes.getValue(AttributeType.DEX).attributeBase)
+    assertEquals(583, userAttributes.getValue(AttributeType.INT).attributeBase)
+    assertEquals(500, userAttributes.getValue(AttributeType.STR).attributeBase)
   }
 }
