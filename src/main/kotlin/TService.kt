@@ -8,11 +8,12 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import java.io.IOException
+import java.net.SocketException
+import java.util.*
 import kotlinx.coroutines.delay
 import org.example.rest.*
 import org.w3c.dom.Document
-import java.io.IOException
-import java.net.SocketException
 
 private val logger = KotlinLogging.logger {}
 
@@ -73,12 +74,14 @@ class TService(private var sessionId: String, private val gfToken: String?) {
   }
 
   private suspend fun postBody(body: String): String {
+    val gfTokenCookie = gfToken ?: UUID.randomUUID().toString()
     while (true) {
       try {
         val response =
             client.post(postUrl) {
               contentType(ContentType.Application.Xml)
               setBody(body)
+              headers { append("Cookie", "gf-token-production=$gfTokenCookie") }
             }
         return response.readBytes().decodeToString()
       } catch (ex: ConnectTimeoutException) {
