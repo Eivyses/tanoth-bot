@@ -1,9 +1,9 @@
 package org.example
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.LocalDateTime
+import kotlinx.coroutines.delay
 
 private val logger = KotlinLogging.logger {}
 
@@ -13,6 +13,7 @@ class GameService(sessionId: String, gfToken: String?) {
   private var attackTarget: OtherPlayerInfo? = null
   private var stolenGold: Int = 0
   private var adventuresForTheDayDone: Boolean = false
+  private var isWorking: Boolean = false
 
   suspend fun run(
       runeToUpgrade: ArcaneCircleItemType?,
@@ -79,8 +80,10 @@ class GameService(sessionId: String, gfToken: String?) {
     val adventureResponse = tService.getAdventures()
     if (adventureResponse == null) {
       logger.debug { "In work..." }
+      isWorking = true
       return
     }
+    isWorking = false
     val (runningTime, adventures, adventureResult) = adventureResponse
     if (runningTime != null) {
       logger.debug { "Adventure in progress for another ${runningTime}s" }
@@ -174,7 +177,7 @@ class GameService(sessionId: String, gfToken: String?) {
   }
 
   private suspend fun runWorkChecks(autoWork: Boolean) {
-    if (!autoWork || !adventuresForTheDayDone) {
+    if (!autoWork || !adventuresForTheDayDone || isWorking) {
       return
     }
     val workDataResponse = tService.getWorkData() ?: return
