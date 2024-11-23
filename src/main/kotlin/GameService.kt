@@ -1,9 +1,9 @@
 package org.example
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.LocalDateTime
-import kotlinx.coroutines.delay
 
 private val logger = KotlinLogging.logger {}
 
@@ -23,6 +23,7 @@ class GameService(sessionId: String, gfToken: String?) {
       attributeToUpgrade: AttributeType?,
       autoAttributes: Boolean,
       maxDifficulty: Difficulty,
+      adventureStrategy: AdventureStrategy,
       autoWork: Boolean
   ) {
     while (true) {
@@ -35,7 +36,8 @@ class GameService(sessionId: String, gfToken: String?) {
             playerGemsCount = currentPlayerInfo.gems,
             useGemsForAdventures = useGemsForAdventures,
             prioritizeGold = prioritizeGold,
-            maxDifficulty = maxDifficulty)
+            maxDifficulty = maxDifficulty,
+            adventureStrategy = adventureStrategy)
         runWorkChecks(autoWork = autoWork)
 
         runAttackChecks(maxAttackPlayerLevel)
@@ -69,7 +71,8 @@ class GameService(sessionId: String, gfToken: String?) {
       playerGemsCount: Int,
       useGemsForAdventures: Boolean,
       prioritizeGold: Boolean,
-      maxDifficulty: Difficulty
+      maxDifficulty: Difficulty,
+      adventureStrategy: AdventureStrategy,
   ) {
     logger.debug {}
     logger.debug { "Adventure check..." }
@@ -100,7 +103,8 @@ class GameService(sessionId: String, gfToken: String?) {
           pickNextAdventure(
               adventures = adventures,
               prioritizeGold = prioritizeGold,
-              maxDifficulty = maxDifficulty)
+              maxDifficulty = maxDifficulty,
+              adventureStrategy = adventureStrategy)
       adventures.toPrettyString().forEach { logger.info { it } }
       logger.info { "Best adventure: $bestAdventure" }
       tService.postAdventure(bestAdventure.questId)
@@ -112,18 +116,14 @@ class GameService(sessionId: String, gfToken: String?) {
   private fun pickNextAdventure(
       adventures: Adventures,
       prioritizeGold: Boolean,
-      maxDifficulty: Difficulty
+      maxDifficulty: Difficulty,
+      adventureStrategy: AdventureStrategy,
   ): Adventure {
-    val sortedByPriority =
-        adventures.adventures.sortedByDescending {
-          if (prioritizeGold) {
-            it.gold
-          } else {
-            it.experience
-          }
-        }
+    val sortedByStrategy =
+        adventureStrategy.strategy.sortByStrategy(
+            prioritizeGold = prioritizeGold, adventures = adventures.adventures)
 
-    return sortedByPriority.first { it.difficulty.value <= maxDifficulty.value }
+    return sortedByStrategy.first { it.difficulty.value <= maxDifficulty.value }
   }
 
   private suspend fun runAttackChecks(maxAttackPlayerLevel: Int?) {

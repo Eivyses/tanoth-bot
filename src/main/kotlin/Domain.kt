@@ -110,3 +110,58 @@ enum class AttributeType(val value: String) {
 }
 
 data class UserAttribute(val attributeCost: Int, val attributeBase: Int)
+
+enum class AdventureStrategy(val value: String, val strategy: BaseAdventureStrategy) {
+  MAX_VALUE("DEFAULT", DefaultAdventureStrategy()),
+  MAX_PER_MIN("MAX_PER_MIN", MaxPerMinAdventureStrategy()),
+  BEST_COMBINED("BEST_COMBINED", BestCombinedAdventureStrategy())
+}
+
+interface BaseAdventureStrategy {
+  fun sortByStrategy(prioritizeGold: Boolean, adventures: List<Adventure>): List<Adventure>
+}
+
+class DefaultAdventureStrategy : BaseAdventureStrategy {
+  override fun sortByStrategy(
+      prioritizeGold: Boolean,
+      adventures: List<Adventure>
+  ): List<Adventure> {
+    return adventures.sortedByDescending {
+      if (prioritizeGold) {
+        it.gold
+      } else {
+        it.experience
+      }
+    }
+  }
+}
+
+class MaxPerMinAdventureStrategy : BaseAdventureStrategy {
+  override fun sortByStrategy(
+      prioritizeGold: Boolean,
+      adventures: List<Adventure>
+  ): List<Adventure> {
+    return adventures.sortedByDescending {
+      if (prioritizeGold) {
+        it.gold.toFloat() / (it.duration / 60f)
+      } else {
+        it.experience.toFloat() / (it.duration / 60f)
+      }
+    }
+  }
+}
+
+class BestCombinedAdventureStrategy : BaseAdventureStrategy {
+  override fun sortByStrategy(
+      prioritizeGold: Boolean,
+      adventures: List<Adventure>
+  ): List<Adventure> {
+    return adventures.sortedByDescending {
+      if (prioritizeGold) {
+        it.gold + it.experience * 5
+      } else {
+        it.experience * 10 + it.gold
+      }
+    }
+  }
+}

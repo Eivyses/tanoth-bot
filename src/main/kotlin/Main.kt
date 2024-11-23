@@ -5,12 +5,18 @@ import ch.qos.logback.classic.Logger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.slf4j.LoggerFactory
 
-private enum class Args(val value: String, val descriptions: String) {
+private enum class Args(val value: String, val descriptions: String, val values: String? = null) {
   SESSION_ID(
       "--session-id",
       "<string> Currently active session id, --session-id or --gf-token must be provided"),
-  RUNE("--rune", "<string> Rune to upgrade, optional"),
-  ATTRIBUTE("--attribute", "<string> Attribute to upgrade, optional"),
+  RUNE(
+      "--rune",
+      "<string> Rune to upgrade, optional",
+      ArcaneCircleItemType.entries.joinToString(separator = ",")),
+  ATTRIBUTE(
+      "--attribute",
+      "<string> Attribute to upgrade, optional",
+      AttributeType.entries.joinToString(separator = ",")),
   USE_GEMS_FOR_ADVENTURES("--use-gems-for-adventures", "Use gems when doing adventures, optional"),
   MAX_ATTACK_PLAYER_LEVEL(
       "--max-attack-player-level",
@@ -27,8 +33,14 @@ private enum class Args(val value: String, val descriptions: String) {
   AUTO_ATTRIBUTES(
       "--auto-attributes", "Automatically upgrade attributes in predefined order, optional"),
   MAX_DIFFICULTY(
-      "--max-difficulty", "Set max difficulty of adventures to do, default DIFFICULT, optional"),
-  AUTO_WORK("--auto-work", "Automatically go to work if all adventures are done, optional")
+      "--max-difficulty",
+      "Set max difficulty of adventures to do, default ${Difficulty.DIFFICULT}, optional",
+      Difficulty.entries.joinToString(separator = ",")),
+  AUTO_WORK("--auto-work", "Automatically go to work if all adventures are done, optional"),
+  ADVENTURE_STRATEGY(
+      "--adventure-strategy",
+      "Selects one of the strategies for doing adventures, default ${AdventureStrategy.MAX_VALUE}, optional",
+      AdventureStrategy.entries.joinToString(separator = ","))
 }
 
 private val logger = KotlinLogging.logger {}
@@ -41,7 +53,10 @@ suspend fun main(args: Array<String>) {
     logger.error {
       "Please provide at least ${Args.SESSION_ID.value} or ${Args.GF_TOKEN.value}. Other options are:"
     }
-    Args.entries.forEach { logger.error { "  ${it.value} - ${it.descriptions}" } }
+    Args.entries.forEach {
+      logger.error { "  ${it.value} - ${it.descriptions}" }
+      it.values?.let { logger.error { "      possible values: $it" } }
+    }
     return
   }
   val argsMap = parseArgs(args)
@@ -64,6 +79,9 @@ suspend fun main(args: Array<String>) {
   val autoAttributes = Args.AUTO_ATTRIBUTES.value in argsMap
   val maxDifficulty =
       argsMap[Args.MAX_DIFFICULTY.value]?.let { Difficulty.valueOf(it) } ?: Difficulty.DIFFICULT
+  val adventureStrategy =
+      argsMap[Args.ADVENTURE_STRATEGY.value]?.let { AdventureStrategy.valueOf(it) }
+          ?: AdventureStrategy.MAX_VALUE
   val autoWork = Args.AUTO_WORK.value in argsMap
 
   if (sessionId == null && gfToken == null) {
@@ -93,6 +111,7 @@ suspend fun main(args: Array<String>) {
   logger.info { "Auto upgrade runes: $autoRunes" }
   logger.info { "Auto upgrade attributes: $autoAttributes" }
   logger.info { "Max adventure difficulty: $maxDifficulty" }
+  logger.info { "Using adventure strategy: $adventureStrategy" }
   logger.info { "Auto work: $autoWork" }
   runeToUpgrade?.let { logger.info { "Using rune $it to upgrade" } }
   attributeToUpgrade?.let { logger.info { "Using attribute $it to upgrade" } }
@@ -115,6 +134,7 @@ suspend fun main(args: Array<String>) {
       autoRunes = autoRunes,
       autoAttributes = autoAttributes,
       maxDifficulty = maxDifficulty,
+      adventureStrategy = adventureStrategy,
       autoWork = autoWork)
 }
 
