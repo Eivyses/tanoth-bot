@@ -74,6 +74,17 @@ class TService(private var sessionId: String, private val gfToken: String?) {
             extraStringParam = attribute.value))
   }
 
+  suspend fun getWorkData(): WorkDataResponse? {
+    return postBodyAndParseResult(
+        createPostBody(methodName = "GetWorkData", sessionId = sessionId)) {
+          it.parseAsWorkDataResponse()
+        }
+  }
+
+  suspend fun goToWork(hours: Int) {
+    postBody(createPostBody(methodName = "StartWork", sessionId = sessionId, extraIntParam = hours))
+  }
+
   suspend fun getCurrentPlayerInfo(): CurrentPlayerInfo {
     return postBodyAndParseResult(
         createPostBody(methodName = "MiniUpdate", sessionId = sessionId)) {

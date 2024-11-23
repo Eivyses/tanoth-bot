@@ -27,7 +27,8 @@ private enum class Args(val value: String, val descriptions: String) {
   AUTO_ATTRIBUTES(
       "--auto-attributes", "Automatically upgrade attributes in predefined order, optional"),
   MAX_DIFFICULTY(
-      "--max-difficulty", "Set max difficulty of adventures to do, default DIFFICULT, optional")
+      "--max-difficulty", "Set max difficulty of adventures to do, default DIFFICULT, optional"),
+  AUTO_WORK("--auto-work", "Automatically go to work if all adventures are done, optional")
 }
 
 private val logger = KotlinLogging.logger {}
@@ -63,6 +64,7 @@ suspend fun main(args: Array<String>) {
   val autoAttributes = Args.AUTO_ATTRIBUTES.value in argsMap
   val maxDifficulty =
       argsMap[Args.MAX_DIFFICULTY.value]?.let { Difficulty.valueOf(it) } ?: Difficulty.DIFFICULT
+  val autoWork = Args.AUTO_WORK.value in argsMap
 
   if (sessionId == null && gfToken == null) {
     logger.error { "No sessionId or gfToken provided" }
@@ -91,6 +93,7 @@ suspend fun main(args: Array<String>) {
   logger.info { "Auto upgrade runes: $autoRunes" }
   logger.info { "Auto upgrade attributes: $autoAttributes" }
   logger.info { "Max adventure difficulty: $maxDifficulty" }
+  logger.info { "Auto work: $autoWork" }
   runeToUpgrade?.let { logger.info { "Using rune $it to upgrade" } }
   attributeToUpgrade?.let { logger.info { "Using attribute $it to upgrade" } }
   maxAttackPlayerLevel?.let { logger.info { "Attacking players that are max $it level" } }
@@ -111,7 +114,8 @@ suspend fun main(args: Array<String>) {
       prioritizeGold = prioritizeGold,
       autoRunes = autoRunes,
       autoAttributes = autoAttributes,
-      maxDifficulty = maxDifficulty)
+      maxDifficulty = maxDifficulty,
+      autoWork = autoWork)
 }
 
 private fun parseArgs(args: Array<String>): Map<String, String?> {

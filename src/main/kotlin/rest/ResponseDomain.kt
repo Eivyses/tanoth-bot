@@ -91,7 +91,8 @@ fun Document.parseAsAttackResult(): AttackResult? {
 
   val haveWon = playerHealth > enemyPhysicalDamage + enemySpellDamage
   val resultFame = if (haveWon) fame else -fame
-  return AttackResult(haveWon = haveWon, fame = resultFame, robbedGold = gold, xpEarned = xp)
+  val resultGold = if (haveWon) gold else -gold
+  return AttackResult(haveWon = haveWon, fame = resultFame, robbedGold = resultGold, xpEarned = xp)
 }
 
 fun Document.parseAsAdventureResult(): AdventureResult {
@@ -158,4 +159,11 @@ fun Document.parseAsUserAttributesResponse(): UserAttributesResponse {
           AttributeType.DEX to UserAttribute(attributeCost = costDex, attributeBase = dexBase),
           AttributeType.INT to UserAttribute(attributeCost = costInt, attributeBase = intBase),
           AttributeType.STR to UserAttribute(attributeCost = costStr, attributeBase = strBase)))
+}
+
+fun Document.parseAsWorkDataResponse(): WorkDataResponse? {
+  val goldFee = this.getValueFromXml<Int>("gold_fee") ?: return null
+  val maxWorkingHours = this.getValueFromXml<Int>("max_working_hours")!!
+  val xp = this.getValueFromXml<Int>("xp")!!
+  return WorkDataResponse(goldFee = goldFee, maxWorkingHours = maxWorkingHours, xp = xp)
 }

@@ -1,6 +1,8 @@
 package org.example
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import java.time.Duration
+import java.time.LocalDateTime
 import kotlinx.coroutines.delay
 
 private val logger = KotlinLogging.logger {}
@@ -10,6 +12,7 @@ class GameService(sessionId: String, gfToken: String?) {
   private val tService = TService(sessionId, gfToken)
   private var attackTarget: OtherPlayerInfo? = null
   private var stolenGold: Int = 0
+  private var adventuresForTheDayDone: Boolean = false
 
   suspend fun run(
       runeToUpgrade: ArcaneCircleItemType?,
@@ -19,7 +22,8 @@ class GameService(sessionId: String, gfToken: String?) {
       autoRunes: Boolean,
       attributeToUpgrade: AttributeType?,
       autoAttributes: Boolean,
-      maxDifficulty: Difficulty
+      maxDifficulty: Difficulty,
+      autoWork: Boolean
   ) {
     while (true) {
       try {
@@ -32,6 +36,8 @@ class GameService(sessionId: String, gfToken: String?) {
             useGemsForAdventures = useGemsForAdventures,
             prioritizeGold = prioritizeGold,
             maxDifficulty = maxDifficulty)
+        runWorkChecks(autoWork = autoWork)
+
         runAttackChecks(maxAttackPlayerLevel)
         runArcaneCircleChecks(
             currentPlayerInfo = currentPlayerInfo,
@@ -89,6 +95,7 @@ class GameService(sessionId: String, gfToken: String?) {
     }
     if ((useGemsForAdventures && playerGemsCount > 0) ||
         adventures.adventuresMadeToday < adventures.freeAdventuresPerDay) {
+      adventuresForTheDayDone = false
       val bestAdventure =
           pickNextAdventure(
               adventures = adventures,
@@ -97,6 +104,8 @@ class GameService(sessionId: String, gfToken: String?) {
       adventures.toPrettyString().forEach { logger.info { it } }
       logger.info { "Best adventure: $bestAdventure" }
       tService.postAdventure(bestAdventure.questId)
+    } else {
+      adventuresForTheDayDone = true
     }
   }
 
@@ -162,6 +171,23 @@ class GameService(sessionId: String, gfToken: String?) {
     val attackResult = tService.attackPlayer(target.name)
     logger.info { attackResult }
     return attackResult?.robbedGold
+  }
+
+  private suspend fun runWorkChecks(autoWork: Boolean) {
+    if (!autoWork || !adventuresForTheDayDone) {
+      return
+    }
+    val workDataResponse = tService.getWorkData() ?: return
+
+    val durationTillMorning =
+        Duration.between(
+            LocalDateTime.now(), LocalDateTime.now().plusDays(1).withHour(8).withMinute(0))
+    val workHours =
+        durationTillMorning.toHours().toInt().coerceAtMost(workDataResponse.maxWorkingHours)
+    val xpGain = workHours * workDataResponse.xp
+    val goldGain = workHours * workDataResponse.goldFee
+    logger.info { "Going to work for: $workHours hours for $goldGain gold and $xpGain xp" }
+    tService.goToWork(workHours)
   }
 
   private suspend fun runAttributeUpgradeChecks(
