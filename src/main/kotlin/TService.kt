@@ -8,12 +8,12 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import java.io.IOException
-import java.net.SocketException
-import java.util.*
 import kotlinx.coroutines.delay
 import org.example.rest.*
 import org.w3c.dom.Document
+import java.io.IOException
+import java.net.SocketException
+import java.util.*
 
 private val logger = KotlinLogging.logger {}
 
@@ -24,7 +24,7 @@ class TService(private var sessionId: String, private val gfToken: String?) {
 
   suspend fun getAdventures(): AdventureResponse? {
     return postBodyAndParseResult(
-        createPostBody(methodName = "GetAdventures", sessionId = sessionId)) {
+        createPostBody(methodName = "GetAdventures")) {
           it.parseAsAdventureResponse()
         }
   }
@@ -32,12 +32,12 @@ class TService(private var sessionId: String, private val gfToken: String?) {
   suspend fun postAdventure(questId: Int) {
     postBody(
         createPostBody(
-            methodName = "StartAdventure", sessionId = sessionId, extraIntParam = questId))
+            methodName = "StartAdventure", extraIntParam = questId))
   }
 
   suspend fun getRandomEnemy(): RandomEnemyResponse {
     return postBodyAndParseResult(
-        createPostBody(methodName = "GetPvpData", sessionId = sessionId)) {
+        createPostBody(methodName = "GetPvpData")) {
           it.parseAsRandomEnemy()
         }
   }
@@ -45,14 +45,14 @@ class TService(private var sessionId: String, private val gfToken: String?) {
   suspend fun attackPlayer(playerName: String): AttackResult? {
     return postBodyAndParseResult(
         createPostBody(
-            methodName = "Fight", sessionId = sessionId, extraStringParam = playerName)) {
+            methodName = "Fight", extraStringParam = playerName)) {
           it.parseAsAttackResult()
         }
   }
 
   suspend fun getArcaneCircle(): List<ArcaneCircleItem> {
     return postBodyAndParseResult(
-        createPostBody(methodName = "EvocationCircle_getCircle", sessionId = sessionId)) {
+        createPostBody(methodName = "EvocationCircle_getCircle")) {
           it.parseAsArcaneCircle()
         }
   }
@@ -61,42 +61,50 @@ class TService(private var sessionId: String, private val gfToken: String?) {
     postBody(
         createPostBody(
             methodName = "EvocationCircle_buyNode",
-            sessionId = sessionId,
             extraStringParam = "gold",
             extraIntParam = nodeId))
   }
 
   suspend fun upgradeAttribute(attribute: AttributeType) {
-    postBody(
+    postBody( 
         createPostBody(
             methodName = "RaiseAttribute",
-            sessionId = sessionId,
             extraStringParam = attribute.value))
   }
 
   suspend fun getWorkData(): WorkDataResponse? {
     return postBodyAndParseResult(
-        createPostBody(methodName = "GetWorkData", sessionId = sessionId)) {
+        createPostBody(methodName = "GetWorkData")) {
           it.parseAsWorkDataResponse()
         }
   }
 
   suspend fun goToWork(hours: Int) {
-    postBody(createPostBody(methodName = "StartWork", sessionId = sessionId, extraIntParam = hours))
+    postBody(createPostBody(methodName = "StartWork", extraIntParam = hours))
   }
 
   suspend fun getCurrentPlayerInfo(): CurrentPlayerInfo {
     return postBodyAndParseResult(
-        createPostBody(methodName = "MiniUpdate", sessionId = sessionId)) {
+        createPostBody(methodName = "MiniUpdate")) {
           it.parseAsCurrentPlayerInfo()
         }
   }
 
   suspend fun geUserAttributes(): UserAttributesResponse {
     return postBodyAndParseResult(
-        createPostBody(methodName = "GetUserAttributes", sessionId = sessionId)) {
+        createPostBody(methodName = "GetUserAttributes")) {
           it.parseAsUserAttributesResponse()
         }
+  }
+
+  suspend fun getMapDetails(): MapDetailsResponse? {
+    return postBodyAndParseResult(createPostBody(methodName = "GetMapDetails")) {
+      it.parseAsMapDetailsResponse()
+    }
+  }
+
+  suspend fun doMap() {
+    postBody(createPostBody(methodName = "StartIllusionCave"))
   }
 
   private suspend fun postBody(body: String): String {
@@ -109,7 +117,7 @@ class TService(private var sessionId: String, private val gfToken: String?) {
               setBody(body)
               headers { append("Cookie", "gf-token-production=$gfTokenCookie") }
             }
-        return response.readBytes().decodeToString()
+        return response.readRawBytes().decodeToString()
       } catch (ex: ConnectTimeoutException) {
         logger.warn { "Timeout, retry..." }
         delay(10_000)
@@ -154,5 +162,51 @@ class TService(private var sessionId: String, private val gfToken: String?) {
         throw RuntimeException("Failed to read response for xml $rawXml", ex)
       }
     }
+  }
+
+  private fun createPostBody(
+    methodName: String,
+    extraIntParam: Int? = null,
+    extraStringParam: String? = null
+  ): String {
+    val extraIntParamBody =
+      if (extraIntParam != null)
+        """
+            <param>
+                <value>
+                    <int>$extraIntParam</int>
+                </value>
+            </param>
+          """
+          .trimIndent()
+      else ""
+
+    val extraStringParamBody =
+      if (extraStringParam != null)
+        """
+            <param>
+                <value>
+                    <string>$extraStringParam</string>
+                </value>
+            </param>
+          """
+          .trimIndent()
+      else ""
+
+    return """
+          <methodCall>
+              <methodName>$methodName</methodName>
+              <params>
+                  <param>
+                      <value>
+                          <string>$sessionId</string>
+                      </value>
+                  </param>
+                  $extraStringParamBody
+                  $extraIntParamBody
+              </params>
+          </methodCall>
+        """
+      .trimIndent()
   }
 }

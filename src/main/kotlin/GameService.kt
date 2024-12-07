@@ -1,9 +1,9 @@
 package org.example
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.LocalDateTime
-import kotlinx.coroutines.delay
 
 private val logger = KotlinLogging.logger {}
 
@@ -14,18 +14,20 @@ class GameService(sessionId: String, gfToken: String?) {
   private var stolenGold: Int = 0
   private var adventuresForTheDayDone: Boolean = false
   private var isWorking: Boolean = false
+  private var isInAdventure: Boolean = false
 
   suspend fun run(
-      runeToUpgrade: ArcaneCircleItemType?,
-      useGemsForAdventures: Boolean,
-      maxAttackPlayerLevel: Int?,
-      prioritizeGold: Boolean,
-      autoRunes: Boolean,
-      attributeToUpgrade: AttributeType?,
-      autoAttributes: Boolean,
-      maxDifficulty: Difficulty,
-      adventureStrategy: AdventureStrategy,
-      autoWork: Boolean
+    runeToUpgrade: ArcaneCircleItemType?,
+    useGemsForAdventures: Boolean,
+    maxAttackPlayerLevel: Int?,
+    prioritizeGold: Boolean,
+    autoRunes: Boolean,
+    attributeToUpgrade: AttributeType?,
+    autoAttributes: Boolean,
+    maxDifficulty: Difficulty,
+    adventureStrategy: AdventureStrategy,
+    autoWork: Boolean,
+    autoMap: Boolean
   ) {
     while (true) {
       try {
@@ -39,6 +41,7 @@ class GameService(sessionId: String, gfToken: String?) {
             prioritizeGold = prioritizeGold,
             maxDifficulty = maxDifficulty,
             adventureStrategy = adventureStrategy)
+        runMapChecks(autoMap = autoMap)
         runWorkChecks(autoWork = autoWork)
 
         runAttackChecks(maxAttackPlayerLevel)
@@ -87,8 +90,10 @@ class GameService(sessionId: String, gfToken: String?) {
     val (runningTime, adventures, adventureResult) = adventureResponse
     if (runningTime != null) {
       logger.debug { "Adventure in progress for another ${runningTime}s" }
+      isInAdventure = true
       return
     }
+    isInAdventure = false
     if (adventureResult != null) {
       logger.info { "Adventure finished!" }
       logger.info { adventureResult }
@@ -193,6 +198,17 @@ class GameService(sessionId: String, gfToken: String?) {
     tService.goToWork(workHours)
   }
 
+  private suspend fun runMapChecks(autoMap: Boolean) {
+    if (!autoMap || isWorking || isInAdventure) {
+      return
+    }
+    val mapDetails = tService.getMapDetails() ?: return
+    if (mapDetails.showCave && mapDetails.bsCost == 0) {
+      logger.info { "Doing map" }
+      tService.doMap()
+    }
+  }
+
   private suspend fun runAttributeUpgradeChecks(
       currentPlayerInfo: CurrentPlayerInfo,
       attributeToUpgrade: AttributeType?,
@@ -236,6 +252,11 @@ class GameService(sessionId: String, gfToken: String?) {
   ): Boolean {
     val arcaneCircleItems = tService.getArcaneCircle()
     arcaneCircleItems.forEach { logger.trace { it } }
+    val skull = arcaneCircleItems.first { it.arcaneCircleItemType == ArcaneCircleItemType.DEMON_SKULL }
+    if (skull.level == 10) {
+      logger.warn { "Max skull level reached, please disable ${Args.AUTO_RUNES.value}" }
+      return false
+    }
 
     val targetRune =
         if (runeToUpgrade != null) {
@@ -275,7 +296,7 @@ class GameService(sessionId: String, gfToken: String?) {
             else -> (skullLevel + 1) * 100
           }
       val currentRune = arcaneCircleItems.first { it.arcaneCircleItemType == rune }
-      if (currentRune.level < targetLevel) {
+      if (currentRune.level < targetLevel && currentRune.level < currentRune.maxLevel) {
         return currentRune
       }
     }

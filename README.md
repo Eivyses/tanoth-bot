@@ -13,6 +13,7 @@ this is a browser game bot, created for fun.
 - Automatically upgrade runes or one provided rune
 - Automatically upgrade attributes or one provided attribute
 - Automatically go to work till next days morning when all adventures are done
+- Automatically do map challenges
 
 ## Building
 
@@ -42,6 +43,7 @@ Currently available options:
 --auto-attributes - Automatically upgrade attributes in predefined order, optional
 --max-difficulty - Set max difficulty of adventures to do, default DIFFICULT, optional
 --auto-work - Automatically go to work if all adventures are done, optional
+--auto-map - Automatically do map challenge, optional
 ```
 
 ## Tokens

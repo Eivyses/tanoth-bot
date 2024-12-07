@@ -5,7 +5,7 @@ import ch.qos.logback.classic.Logger
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.slf4j.LoggerFactory
 
-private enum class Args(val value: String, val descriptions: String, val values: String? = null) {
+enum class Args(val value: String, val descriptions: String, val values: String? = null) {
   SESSION_ID(
       "--session-id",
       "<string> Currently active session id, --session-id or --gf-token must be provided"),
@@ -40,7 +40,9 @@ private enum class Args(val value: String, val descriptions: String, val values:
   ADVENTURE_STRATEGY(
       "--adventure-strategy",
       "Selects one of the strategies for doing adventures, default ${AdventureStrategy.MAX_VALUE}, optional",
-      AdventureStrategy.entries.joinToString(separator = ","))
+      AdventureStrategy.entries.joinToString(separator = ",")),
+  AUTO_MAP("--auto-map",
+    "Automatically do map challenge, optional")
 }
 
 private val logger = KotlinLogging.logger {}
@@ -83,6 +85,7 @@ suspend fun main(args: Array<String>) {
       argsMap[Args.ADVENTURE_STRATEGY.value]?.let { AdventureStrategy.valueOf(it) }
           ?: AdventureStrategy.MAX_VALUE
   val autoWork = Args.AUTO_WORK.value in argsMap
+  val autoMap = Args.AUTO_MAP.value in argsMap
 
   if (sessionId == null && gfToken == null) {
     logger.error { "No sessionId or gfToken provided" }
@@ -113,6 +116,7 @@ suspend fun main(args: Array<String>) {
   logger.info { "Max adventure difficulty: $maxDifficulty" }
   logger.info { "Using adventure strategy: $adventureStrategy" }
   logger.info { "Auto work: $autoWork" }
+  logger.info { "Auto map: $autoMap" }
   runeToUpgrade?.let { logger.info { "Using rune $it to upgrade" } }
   attributeToUpgrade?.let { logger.info { "Using attribute $it to upgrade" } }
   maxAttackPlayerLevel?.let { logger.info { "Attacking players that are max $it level" } }
@@ -135,7 +139,8 @@ suspend fun main(args: Array<String>) {
       autoAttributes = autoAttributes,
       maxDifficulty = maxDifficulty,
       adventureStrategy = adventureStrategy,
-      autoWork = autoWork)
+      autoWork = autoWork,
+      autoMap = autoMap)
 }
 
 private fun parseArgs(args: Array<String>): Map<String, String?> {

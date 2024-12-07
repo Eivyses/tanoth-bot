@@ -167,3 +167,12 @@ fun Document.parseAsWorkDataResponse(): WorkDataResponse? {
   val xp = this.getValueFromXml<Int>("xp")!!
   return WorkDataResponse(goldFee = goldFee, maxWorkingHours = maxWorkingHours, xp = xp)
 }
+
+fun Document.parseAsMapDetailsResponse(): MapDetailsResponse? {
+  val cost = this.getValueFromXml<Int>("illusion_cave_bloodstone_cost") ?: return null
+  val level = this.getValueFromXml<Int>("illusion_cave_level")!!
+  val duration = this.getValueFromXml<Int>("illusion_duration")!!
+  val enemy = this.getValueFromXml<Int>("illusion_enemy")!!
+  val showCave = this.getValueFromXml<Boolean>("show_illusion_cave")!!
+  return MapDetailsResponse(bsCost = cost, level = level, duration = duration, enemy = enemy, showCave = showCave)
+}

@@ -5,7 +5,7 @@ plugins {
 
 group = "org.example"
 
-version = "1.2"
+version = "1.3"
 
 repositories { mavenCentral() }
 
@@ -15,16 +15,16 @@ dependencies {
   val logbackVersion = "1.5.6"
   implementation("ch.qos.logback:logback-classic:$logbackVersion")
 
-  val ktorVersion = "2.3.12"
+  val ktorVersion = "3.0.1"
   implementation("io.ktor:ktor-client-core:$ktorVersion")
   implementation("io.ktor:ktor-client-cio:$ktorVersion")
 
   testImplementation(kotlin("test"))
 
-  val seleniumVersion = "4.25.0"
+  val seleniumVersion = "4.27.0"
   implementation("org.seleniumhq.selenium:selenium-java:$seleniumVersion")
   implementation("org.seleniumhq.selenium:selenium-chrome-driver:$seleniumVersion")
-  implementation("org.seleniumhq.selenium:selenium-devtools-v129:$seleniumVersion")
+  implementation("org.seleniumhq.selenium:selenium-devtools-v131:$seleniumVersion")
   implementation("io.github.bonigarcia:webdrivermanager:5.9.2")
 
   implementation("io.github.oshai:kotlin-logging-jvm:7.0.0")

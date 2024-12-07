@@ -73,6 +73,8 @@ data class UserAttributesResponse(val userAttributes: Map<AttributeType, UserAtt
 
 data class WorkDataResponse(val goldFee: Int, val maxWorkingHours: Int, val xp: Int)
 
+data class MapDetailsResponse(val bsCost: Int, val level: Int, val duration: Int, val enemy: Int, val showCave: Boolean)
+
 enum class ArcaneCircleItemType(val id: Int, val effect: String) {
   AMETHYST(id = 1, effect = "More gold in adventures"),
   AMBER(id = 2, effect = "Higher wages"),
